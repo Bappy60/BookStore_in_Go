@@ -37,14 +37,36 @@ func GetAllBooks() []Book {
 
 func GetBookById(Id int64) (*Book, *gorm.DB) {
 	var getBook Book
-	db := db.Where("ID=?", Id).Find(&getBook)
-	return &getBook, db
+
+	var result struct {
+		Found bool
+	}
+	db.Raw("SELECT EXISTS(SELECT 1 FROM books WHERE id = ?) AS found", Id).Scan(&result)
+
+	if result.Found {
+		db := db.Where("ID=?", Id).Find(&getBook)
+		return &getBook, db
+	} else {
+		// does not exist
+		return nil, nil
+	}
 }
 
-func DeleteBook(ID int64) Book {
+func DeleteBook(ID int64) string {
 	var book Book
-	log.Print("One Book is deleted")
-	db.Unscoped().Where("ID=?", ID).Delete(book)
-	return book
+	var result struct {
+		Found bool
+	}
+
+	db.Raw("SELECT EXISTS(SELECT 1 FROM books WHERE id = ?) AS found", ID).Scan(&result)
+
+	if result.Found {
+		// exists
+		db.Unscoped().Where("ID=?", ID).Delete(book)
+		return "Delete successful"
+	} else {
+		// does not exist
+		return "There is no book registered by this ID "
+	}
 
 }
