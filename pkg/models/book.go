@@ -1,9 +1,10 @@
 package models
 
 import (
-	"log"
 	"strconv"
+
 	"github.com/Bappy60/BookStore_in_Go/pkg/config"
+	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/jinzhu/gorm"
 )
 
@@ -16,6 +17,14 @@ type Book struct {
 	Publication string `json:"publication"`
 }
 
+func (b Book) Validate() error {
+	return validation.ValidateStruct(&b,
+		validation.Field(&b.Name, validation.Required, validation.Length(3, 50)),
+		validation.Field(&b.Author, validation.Required, validation.Length(3, 50)),
+		validation.Field(&b.Publication),
+	)
+}
+
 func Initialize() {
 	config.Connect()
 	db = config.GetDB()
@@ -23,19 +32,20 @@ func Initialize() {
 }
 
 func (b *Book) CreateBook() *Book {
-	res := AlreadyExists(b)
-	if !res {
-		db.NewRecord(b)
-		db.Create(&b)
-		log.Printf("One New Book named : %s is Created", b.Name)
-		return b
+	res := db.NewRecord(b)
+	if res {
+		exists := AlreadyExists(b)
+		if !exists {
+			db.Create(&b)
+			return b
+		}
 	}
 	return nil
 }
 
-func GetBook( bookId string) []Book {
+func GetBook(bookId string) []Book {
 	var Books []Book
-	if bookId == ""{
+	if bookId == "" {
 		db.Find(&Books)
 		return Books
 	}
@@ -77,7 +87,6 @@ func IsValid(Id int64) bool {
 
 	return result.Found
 }
-
 func AlreadyExists(b *Book) bool {
 	var result struct {
 		Found bool

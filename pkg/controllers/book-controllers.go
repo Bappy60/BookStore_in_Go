@@ -19,10 +19,11 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 	newBooks := models.GetBook(bookId)
 	res, err := json.Marshal(newBooks)
 	if err != nil {
-		w.Write([]byte("Error While Marshaling"))
+		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
 		return
 	}
 	if len(newBooks) == 0 {
+		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("There is no book registered by this ID"))
 		return
 	}
@@ -30,28 +31,32 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-
 func CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	CBook := &models.Book{}
-	err := json.NewDecoder(r.Body).Decode(CBook)
+	CBook := models.Book{}
+	err := json.NewDecoder(r.Body).Decode(&CBook)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
 		return
 	}
-	if CBook.Name == "" || CBook.Author == "" || CBook.Publication == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Name, Author and Publication can't be null "))
+	newBookStruc := models.Book{
+		Name:        CBook.Name,
+		Author:      CBook.Author,
+		Publication: CBook.Publication,
+	}
+	err1 := newBookStruc.Validate()
+	if err1 != nil {
+		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
 		return
 	}
-	b := CBook.CreateBook()
+	b := newBookStruc.CreateBook()
 	if b != nil {
 		res, err := json.Marshal(b)
 		if err != nil {
-			w.Write([]byte("Error While Marshaling"))
+			http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
 			return
 		}
-		w.WriteHeader(http.StatusAccepted)
+		w.WriteHeader(http.StatusCreated)
 		w.Write(res)
 		return
 	}
@@ -65,7 +70,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	var updateBook = &models.Book{}
 	err := json.NewDecoder(r.Body).Decode(updateBook)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
 		return
 	}
 	bookId := r.URL.Query().Get("bookId")
@@ -90,7 +95,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 			db.Save(&bookDetails)
 			res, err := json.Marshal(bookDetails)
 			if err != nil {
-				w.Write([]byte("Error While Marshaling"))
+				http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
 				return
 			}
 			w.WriteHeader(http.StatusAccepted)
@@ -109,7 +114,7 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 	bookId := vars["bookId"]
 	ID, err := strconv.ParseInt(bookId, 0, 0)
 	if err != nil {
-		w.Write([]byte("Invalid Format of ID"))
+		http.Error(w, "Invalid Format of ID", http.StatusNotAcceptable)
 		return
 	}
 	book := models.DeleteBook(ID)
