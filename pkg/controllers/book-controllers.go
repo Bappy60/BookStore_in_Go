@@ -7,16 +7,17 @@ import (
 
 	"github.com/Bappy60/BookStore_in_Go/pkg/config"
 	"github.com/Bappy60/BookStore_in_Go/pkg/models"
+	"github.com/Bappy60/BookStore_in_Go/pkg/repositories"
+	"github.com/Bappy60/BookStore_in_Go/pkg/types"
 	"github.com/gorilla/mux"
 )
 
-var NewBook models.Book
+var NewBook types.ResponseStruc
 
 func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	bookId := r.URL.Query().Get("bookId")
-
-	newBooks := models.GetBook(bookId)
+	newBooks := repositories.GetBook(bookId)
 	res, err := json.Marshal(newBooks)
 	if err != nil {
 		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
@@ -35,6 +36,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	CBook := models.Book{}
 	err := json.NewDecoder(r.Body).Decode(&CBook)
+
 	if err != nil {
 		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
 		return
@@ -49,7 +51,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
 		return
 	}
-	b := newBookStruc.CreateBook()
+	b := repositories.CreateBook(&newBookStruc)
 	if b != nil {
 		res, err := json.Marshal(b)
 		if err != nil {
@@ -76,7 +78,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	bookId := r.URL.Query().Get("bookId")
 
 	if bookId != "" {
-		books := models.GetBook(bookId)
+		books := repositories.GetBook(bookId)
 		if books != nil {
 
 			bookDetails := books[0]
@@ -117,7 +119,7 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Format of ID", http.StatusNotAcceptable)
 		return
 	}
-	book := models.DeleteBook(ID)
+	book := repositories.DeleteBook(ID)
 	res, err := json.Marshal(book)
 	if err != nil {
 		w.Write([]byte("Error While Marshaling"))

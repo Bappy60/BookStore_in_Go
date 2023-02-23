@@ -10,11 +10,11 @@ import (
 )
 
 func main() {
+	models.Initialize()
 	r := mux.NewRouter()
 	routes.RegisterBookStoreRoutes(r)
 	http.Handle("/", r)
 	log.Println("Server Started...")
-	models.Initialize()
 	log.Fatal(http.ListenAndServe("localhost:9011", r))
 	
 }
