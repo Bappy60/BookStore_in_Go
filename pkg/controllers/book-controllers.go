@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -14,6 +13,8 @@ import (
 )
 
 var NewBook types.ResponseStruc
+
+var dbH = repositories.NewDBHandler(repositories.Initialize())
 
 func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -27,8 +28,8 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 		Author:      bookAuthor,
 		Publication: publication,
 	}
-	log.Println(Fstruc)
-	newBooks := repositories.GetBook(&Fstruc)
+
+	newBooks := dbH.GetBook(&Fstruc)
 	res, err := json.Marshal(newBooks)
 	if err != nil {
 		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
@@ -62,7 +63,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
 		return
 	}
-	b := repositories.CreateBook(&newBookStruc)
+	b := dbH.CreateBook(&newBookStruc)
 	if b != nil {
 		res, err := json.Marshal(b)
 		if err != nil {
@@ -98,7 +99,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if bookId != "" {
-		books := repositories.GetBook(&Fstruc)
+		books := dbH.GetBook(&Fstruc)
 		if books != nil {
 
 			bookDetails := books[0]
@@ -139,7 +140,7 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Format of ID", http.StatusNotAcceptable)
 		return
 	}
-	book := repositories.DeleteBook(ID)
+	book := dbH.DeleteBook(ID)
 	res, err := json.Marshal(book)
 	if err != nil {
 		w.Write([]byte("Error While Marshaling"))

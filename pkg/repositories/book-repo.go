@@ -17,12 +17,27 @@ type FilterStruc struct {
 	Publication string
 }
 
-func GetBook(fStruc *FilterStruc) []models.Book {
-	DB = config.GetDB()
+func Initialize() *gorm.DB {
+	config.Connect()
+	db := config.GetDB()
+	return db
+}
+
+type DbHandler struct {
+	db *gorm.DB
+}
+
+func NewDBHandler(db *gorm.DB) *DbHandler {
+	return &DbHandler{
+		db: db,
+	}
+}
+
+func (h *DbHandler) GetBook(fStruc *FilterStruc) []models.Book {
 	var Books []models.Book
-	query := DB.Model(&models.Book{})
+	query := h.db.Model(&models.Book{})
 	if fStruc.ID == "" && fStruc.Name == "" && fStruc.Author == "" && fStruc.Publication == "" {
-		DB.Find(&Books)
+		h.db.Find(&Books)
 		return Books
 	}
 	if fStruc.ID != "" {
@@ -31,9 +46,9 @@ func GetBook(fStruc *FilterStruc) []models.Book {
 		if err != nil {
 			return Books
 		}
-		res := RecordExists(ID)
+		res := h.RecordExists(ID)
 		if res {
-			DB.Where("ID=?", ID).Find(&getBook)
+			h.db.Where("ID=?", ID).Find(&getBook)
 			Books = append(Books, getBook)
 			return Books
 		}
@@ -55,46 +70,32 @@ func GetBook(fStruc *FilterStruc) []models.Book {
 	return Books
 }
 
-func CreateBook(b *models.Book) *models.Book {
-	DB = config.GetDB()
-	res := DB.NewRecord(b)
+func (h *DbHandler) CreateBook(b *models.Book) *models.Book {
+	res := h.db.NewRecord(b)
 	if res {
-		exists := RecordExists(b)
+		exists := h.RecordExists(b)
 		if !exists {
-			DB.Create(b)
+			h.db.Create(b)
 			return b
 		}
 	}
 	return nil
 }
 
-func GetBookByName(bookName string) []models.Book {
-	DB = config.GetDB()
-	var Books []models.Book
-	if bookName == "" {
-		return Books
-	}
-	DB.Where("name=?", bookName).Find(&Books)
-	return Books
-
-}
-
-func DeleteBook(Id int64) string {
-	DB = config.GetDB()
+func (h *DbHandler) DeleteBook(Id int64) string {
 	var book models.Book
-	res := RecordExists(Id)
+	res := h.RecordExists(Id)
 	if res {
-		DB.Unscoped().Where("ID=?", Id).Delete(book)
+		h.db.Unscoped().Where("ID=?", Id).Delete(book)
 		return "Delete successful"
 	}
 	return "There is no book registered by this ID "
 
 }
 
-func RecordExists(arg interface{}) bool {
+func (h *DbHandler) RecordExists(arg interface{}) bool {
 	var query string
 	var args []interface{}
-	DB = config.GetDB()
 	switch v := arg.(type) {
 	case int64:
 		query = "SELECT EXISTS(SELECT 1 FROM books WHERE id = ?) AS found"
@@ -110,7 +111,7 @@ func RecordExists(arg interface{}) bool {
 		Found bool
 	}
 
-	DB.Raw(query, args...).Scan(&result)
+	h.db.Raw(query, args...).Scan(&result)
 
 	return result.Found
 }

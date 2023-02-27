@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/Bappy60/BookStore_in_Go/pkg/config"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/jinzhu/gorm"
 )
@@ -19,10 +18,4 @@ func (b Book) Validate() error {
 		validation.Field(&b.Author, validation.Required, validation.Length(3, 50)),
 		validation.Field(&b.Publication),
 	)
-}
-
-func Initialize() {
-	config.Connect()
-	db := config.GetDB()
-	db.AutoMigrate(&Book{})
 }
