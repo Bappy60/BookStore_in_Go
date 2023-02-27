@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -17,7 +18,17 @@ var NewBook types.ResponseStruc
 func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	bookId := r.URL.Query().Get("bookId")
-	newBooks := repositories.GetBook(bookId)
+	bookName := r.URL.Query().Get("bookName")
+	bookAuthor := r.URL.Query().Get("author")
+	publication := r.URL.Query().Get("publication")
+	Fstruc := repositories.FilterStruc{
+		ID:          bookId,
+		Name:        bookName,
+		Author:      bookAuthor,
+		Publication: publication,
+	}
+	log.Println(Fstruc)
+	newBooks := repositories.GetBook(&Fstruc)
 	res, err := json.Marshal(newBooks)
 	if err != nil {
 		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
@@ -76,9 +87,18 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	bookId := r.URL.Query().Get("bookId")
+	bookName := r.URL.Query().Get("bookName")
+	bookAuthor := r.URL.Query().Get("author")
+	publication := r.URL.Query().Get("publication")
+	Fstruc := repositories.FilterStruc{
+		ID:          bookId,
+		Name:        bookName,
+		Author:      bookAuthor,
+		Publication: publication,
+	}
 
 	if bookId != "" {
-		books := repositories.GetBook(bookId)
+		books := repositories.GetBook(&Fstruc)
 		if books != nil {
 
 			bookDetails := books[0]

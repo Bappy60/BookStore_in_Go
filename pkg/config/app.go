@@ -5,15 +5,15 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-var db *gorm.DB
+var DB *gorm.DB
 
 func Connect() {
 	d, err := gorm.Open("mysql", "root:@/bookstore_db?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
-	db = d
+	DB = d
 }
 func GetDB() *gorm.DB {
-	return db
+	return DB
 }
