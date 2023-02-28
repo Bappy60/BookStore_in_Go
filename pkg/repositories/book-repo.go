@@ -1,21 +1,16 @@
 package repositories
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/Bappy60/BookStore_in_Go/pkg/config"
 	"github.com/Bappy60/BookStore_in_Go/pkg/models"
+	"github.com/Bappy60/BookStore_in_Go/pkg/types"
 	"github.com/jinzhu/gorm"
 )
 
 var DB *gorm.DB
-
-type FilterStruc struct {
-	ID          string
-	Name        string
-	Author      string
-	Publication string
-}
 
 func Initialize() *gorm.DB {
 	config.Connect()
@@ -33,67 +28,72 @@ func NewDBHandler(db *gorm.DB) *DbHandler {
 	}
 }
 
-func (h *DbHandler) GetBook(fStruc *FilterStruc) []models.Book {
+func (Dbhandler *DbHandler) GetBook(fStruc *types.FilterStruc) ([]models.Book, error) {
 	var Books []models.Book
-	query := h.db.Model(&models.Book{})
-	if fStruc.ID == "" && fStruc.Name == "" && fStruc.Author == "" && fStruc.Publication == "" {
-		h.db.Find(&Books)
-		return Books
-	}
-	if fStruc.ID != "" {
-		var getBook models.Book
-		ID, err := strconv.ParseInt(fStruc.ID, 0, 0)
-		if err != nil {
-			return Books
-		}
-		res := h.RecordExists(ID)
-		if res {
-			h.db.Where("ID=?", ID).Find(&getBook)
-			Books = append(Books, getBook)
-			return Books
-		}
+
+	query := Dbhandler.db.Model(&models.Book{})
+	if fStruc.ID == nil && fStruc.Name == nil && fStruc.Author == nil && fStruc.Publication == nil {
+		Dbhandler.db.Find(&Books)
+		return Books, nil
 	}
 
-	if fStruc.Name != "" {
-		query = query.Where("name LIKE ?", "%"+fStruc.Name+"%")
+	if *fStruc.ID != "" {
+		var getBook models.Book
+
+		ID, err := strconv.ParseInt(*fStruc.ID, 0, 0)
+		if err != nil {
+			return Books, errors.New("invalid format of ID")
+		}
+		res := Dbhandler.RecordExists(ID)
+		if res {
+			Dbhandler.db.Where("ID=?", ID).Find(&getBook)
+			Books = append(Books, getBook)
+			return Books, nil
+		}
+		return Books,nil
 	}
-	if fStruc.Author != "" {
-		query = query.Where("author LIKE ?", "%"+fStruc.Author+"%")
+
+	if fStruc.Name != nil {
+		query = query.Where("name LIKE ?", "%"+*fStruc.Name+"%")
 	}
-	if fStruc.Publication != "" {
-		query = query.Where("publication LIKE ?", "%"+fStruc.Publication+"%")
+	if fStruc.Author != nil {
+		query = query.Where("author LIKE ?", "%"+*fStruc.Author+"%")
+	}
+	if fStruc.Publication != nil {
+		query = query.Where("publication LIKE ?", "%"+*fStruc.Publication+"%")
 	}
 
 	if err := query.Find(&Books).Error; err != nil {
-		return Books
+		return Books, err
 	}
-	return Books
+	return Books, nil
 }
 
-func (h *DbHandler) CreateBook(b *models.Book) *models.Book {
-	res := h.db.NewRecord(b)
+func (Dbhandler *DbHandler) CreateBook(book *models.Book) (*models.Book, error) {
+	res := Dbhandler.db.NewRecord(book)
 	if res {
-		exists := h.RecordExists(b)
+		exists := Dbhandler.RecordExists(book)
 		if !exists {
-			h.db.Create(b)
-			return b
+			Dbhandler.db.Create(book)
+			return book, nil
 		}
+		return nil, errors.New("book already exists")
 	}
-	return nil
+	return nil, errors.New("invalid book data")
 }
 
-func (h *DbHandler) DeleteBook(Id int64) string {
+func (Dbhandler *DbHandler) DeleteBook(Id int64) string {
 	var book models.Book
-	res := h.RecordExists(Id)
+	res := Dbhandler.RecordExists(Id)
 	if res {
-		h.db.Unscoped().Where("ID=?", Id).Delete(book)
+		Dbhandler.db.Unscoped().Where("ID=?", Id).Delete(book)
 		return "Delete successful"
 	}
 	return "There is no book registered by this ID "
 
 }
 
-func (h *DbHandler) RecordExists(arg interface{}) bool {
+func (Dbhandler *DbHandler) RecordExists(arg interface{}) bool {
 	var query string
 	var args []interface{}
 	switch v := arg.(type) {
@@ -111,7 +111,7 @@ func (h *DbHandler) RecordExists(arg interface{}) bool {
 		Found bool
 	}
 
-	h.db.Raw(query, args...).Scan(&result)
+	Dbhandler.db.Raw(query, args...).Scan(&result)
 
 	return result.Found
 }

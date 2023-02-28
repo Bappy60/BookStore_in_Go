@@ -5,3 +5,10 @@ type ResponseStruc struct {
 	Author      string `json:"author"`
 	Publication string `json:"publication"`
 }
+
+type FilterStruc struct {
+	ID          *string
+	Name        *string
+	Author      *string
+	Publication *string
+}
