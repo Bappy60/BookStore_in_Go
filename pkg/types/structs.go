@@ -7,7 +7,7 @@ type ResponseStruc struct {
 }
 
 type FilterStruc struct {
-	ID          *string
+	ID          uint
 	Name        *string
 	Author      *string
 	Publication *string

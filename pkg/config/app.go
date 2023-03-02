@@ -17,3 +17,9 @@ func Connect() {
 func GetDB() *gorm.DB {
 	return DB
 }
+
+func Initialize() *gorm.DB {
+	Connect()
+	db := GetDB()
+	return db
+}

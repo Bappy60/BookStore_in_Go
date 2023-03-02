@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Bappy60/BookStore_in_Go/pkg/config"
 	"github.com/Bappy60/BookStore_in_Go/pkg/models"
 	"github.com/Bappy60/BookStore_in_Go/pkg/repositories"
 	"github.com/Bappy60/BookStore_in_Go/pkg/types"
@@ -14,25 +13,27 @@ import (
 
 var NewBook types.ResponseStruc
 
-var DbHandler = repositories.NewDBHandler(repositories.Initialize())
-
 func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	bookId := r.URL.Query().Get("bookId")
 	bookName := r.URL.Query().Get("bookName")
 	bookAuthor := r.URL.Query().Get("author")
 	publication := r.URL.Query().Get("publication")
-
+	parsedId, err := strconv.ParseInt(bookId, 0, 0)
+	if err != nil && bookId != "" {
+		http.Error(w, "invalid format of ID", http.StatusBadRequest)
+		return
+	}
 	Fstruc := types.FilterStruc{
-		ID:          &bookId,
+		ID:          uint(parsedId),
 		Name:        &bookName,
 		Author:      &bookAuthor,
 		Publication: &publication,
 	}
 
-	newBooks, err := DbHandler.GetBook(&Fstruc)
+	newBooks, err := repositories.GetBook(&Fstruc)
 	if err != nil {
-		http.Error(w, "Error While getting book from DataBase", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	res, err := json.Marshal(newBooks)
@@ -41,7 +42,7 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(newBooks) == 0 {
-		http.Error(w, "There is no book registered by this ID", http.StatusOK)
+		http.Error(w, "no book registered ", http.StatusOK)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -52,38 +53,51 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	CreateBook := models.Book{}
 	err := json.NewDecoder(r.Body).Decode(&CreateBook)
-
 	if err != nil {
 		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
 		return
 	}
-	newBookStruc := models.Book{
-		Name:        CreateBook.Name,
-		Author:      CreateBook.Author,
-		Publication: CreateBook.Publication,
-	}
-	err1 := newBookStruc.Validate()
+
+	err1 := CreateBook.Validate()
 	if err1 != nil {
 		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
 		return
 	}
-	book, err := DbHandler.CreateBook(&newBookStruc)
+	Fstruc := types.FilterStruc{
+		Name:        &CreateBook.Name,
+		Author:      &CreateBook.Author,
+		Publication: &CreateBook.Publication,
+	}
+
+	newBooks, err := repositories.GetBook(&Fstruc)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if book != nil {
-		res, err := json.Marshal(book)
+	if len(newBooks) == 0 {
+		reqStruct := models.Book{
+			Name:        CreateBook.Name,
+			Author:      CreateBook.Author,
+			Publication: CreateBook.Publication,
+		}
+		book, err := repositories.BookCreation(&reqStruct)
 		if err != nil {
-			http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		w.WriteHeader(http.StatusCreated)
-		w.Write(res)
-		return
+		if book != nil {
+			res, err := json.Marshal(book)
+			if err != nil {
+				http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
+				return
+			}
+			w.WriteHeader(http.StatusCreated)
+			w.Write(res)
+			return
+		}
 	}
-	w.WriteHeader(http.StatusConflict)
-	w.Write([]byte("Book already created"))
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte("book already exists"))
 }
 
 func UpdateBook(w http.ResponseWriter, r *http.Request) {
@@ -95,45 +109,50 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
 		return
 	}
-	bookId := r.URL.Query().Get("bookId")
+	err1 := updateBook.Validate()
+	if err1 != nil {
+		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
+		return
+	}
+	vars := mux.Vars(r)
+	bookId := vars["bookId"]
+	parsedId, err := strconv.ParseInt(bookId, 0, 0)
+	if err != nil {
+		http.Error(w, "invalid format of ID", http.StatusBadRequest)
+		return
+	}
 	Fstruc := types.FilterStruc{
-		ID: &bookId,
+		ID: uint(parsedId),
+	}
+	books, err := repositories.GetBook(&Fstruc)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(books) == 0 {
+		http.Error(w, "there is no book registered by this ID", http.StatusBadRequest)
+		return
 	}
 
-	if bookId != "" {
-		books, err := DbHandler.GetBook(&Fstruc)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if books != nil {
-
-			bookDetails := books[0]
-			db := config.GetDB()
-
-			if updateBook.Name != "" {
-				bookDetails.Name = updateBook.Name
-			}
-			if updateBook.Author != "" {
-				bookDetails.Author = updateBook.Author
-			}
-			if updateBook.Publication != "" {
-				bookDetails.Publication = updateBook.Publication
-			}
-
-			db.Save(&bookDetails)
-			res, err := json.Marshal(bookDetails)
-			if err != nil {
-				http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
-				return
-			}
-			w.WriteHeader(http.StatusAccepted)
-			w.Write(res)
-			return
-		}
+	bookID, err := strconv.Atoi(bookId)
+	if err != nil {
+		http.Error(w, "invalid format of ID", http.StatusBadRequest)
+		return
 	}
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("ID not Found"))
+	updateBook.ID = uint(bookID)
+	updatedBook, err := repositories.UpdateBookInfo(updateBook)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res, err := json.Marshal(updatedBook)
+	if err != nil {
+		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
+	w.Write(res)
 }
 
 func DeleteBook(w http.ResponseWriter, r *http.Request) {
@@ -141,17 +160,36 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	bookId := vars["bookId"]
-	ID, err := strconv.ParseInt(bookId, 0, 0)
-	if err != nil {
-		http.Error(w, "Invalid Format of ID after adding nodemon make file", http.StatusNotAcceptable)
+	if bookId == "" {
+		http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return
 	}
-	book := DbHandler.DeleteBook(ID)
-	res, err := json.Marshal(book)
+	parsedId, err := strconv.ParseInt(bookId, 0, 0)
 	if err != nil {
-		w.Write([]byte("Error While Marshaling"))
+		http.Error(w, "invalid format of ID", http.StatusBadRequest)
+		return
+	}
+	Fstruc := types.FilterStruc{
+		ID: uint(parsedId),
+	}
+	books, err := repositories.GetBook(&Fstruc)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(books) == 0 {
+		http.Error(w, "there is no book registered by this ID", http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, "invalid format of ID", http.StatusBadRequest)
+		return
+	}
+	msg, err := repositories.DeleteBook(parsedId)
+	if err != nil {
+		http.Error(w, "There is no book registered by this ID", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
-	w.Write(res)
+	w.Write([]byte(msg))
 }
