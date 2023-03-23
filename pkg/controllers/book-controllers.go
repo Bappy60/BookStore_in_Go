@@ -103,7 +103,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var updateBook = &models.Book{}
+	var updateBook = &types.UpdateStruc{}
 	err := json.NewDecoder(r.Body).Decode(updateBook)
 	if err != nil {
 		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)

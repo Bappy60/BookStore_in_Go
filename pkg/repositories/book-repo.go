@@ -46,7 +46,7 @@ func BookCreation(reqStruc *models.Book) (*models.Book, error) {
 	return reqStruc, nil
 }
 
-func UpdateBookInfo(updateBook *models.Book) (*models.Book, error) {
+func UpdateBookInfo(updateBook *types.UpdateStruc) (*models.Book, error) {
 
 	bookDetails := &models.Book{}
 	if updateBook.Name != "" {
