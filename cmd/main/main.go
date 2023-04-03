@@ -14,11 +14,12 @@ import (
 func main() {
 	var db = config.Initialize()
 	db.AutoMigrate(&models.Book{})
+	db.AutoMigrate(&models.Author{})
 	repositories.DBHandler(db)
 	log.Println("Database Connected...")
 	r := mux.NewRouter()
 	routes.RegisterBookStoreRoutes(r)
 	http.Handle("/", r)
 	log.Println("Server Started...")
-	log.Fatal(http.ListenAndServe("localhost:9012", r))
+	log.Fatal(http.ListenAndServe("localhost:9010", r))
 }

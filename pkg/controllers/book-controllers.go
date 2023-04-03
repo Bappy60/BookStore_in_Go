@@ -17,21 +17,43 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	bookId := r.URL.Query().Get("bookId")
 	bookName := r.URL.Query().Get("bookName")
-	bookAuthor := r.URL.Query().Get("author")
+	NumOfPages := r.URL.Query().Get("number_of_pages")
+	AuthorID := r.URL.Query().Get("author_id")
 	publication := r.URL.Query().Get("publication")
+	PublicationYear := r.URL.Query().Get("publication_year")
+
 	parsedId, err := strconv.ParseInt(bookId, 0, 0)
 	if err != nil && bookId != "" {
-		http.Error(w, "invalid format of ID", http.StatusBadRequest)
+		http.Error(w, "invalid format of book id", http.StatusBadRequest)
 		return
 	}
-	Fstruc := types.FilterStruc{
-		ID:          uint(parsedId),
-		Name:        &bookName,
-		Author:      &bookAuthor,
-		Publication: &publication,
+	parsedAuthorID, err := strconv.ParseUint(AuthorID, 0, 0)
+	if err != nil && AuthorID != "" {
+		http.Error(w, "invalid format of author id", http.StatusBadRequest)
+		return
+	}
+	parsedNumOfPages, err := strconv.ParseInt(NumOfPages, 0, 0)
+	if err != nil && NumOfPages != "" {
+		http.Error(w, "invalid format of number of pages", http.StatusBadRequest)
+		return
+	}
+	parsedPublicationYear, err := strconv.ParseInt(PublicationYear, 0, 0)
+	if err != nil && PublicationYear != "" {
+		http.Error(w, "invalid format of publication year", http.StatusBadRequest)
+		return
 	}
 
-	newBooks, err := repositories.GetBook(&Fstruc)
+	pAuthorID := uint(parsedAuthorID)
+	Fstruc := types.FilterStruc{
+		ID:              uint(parsedId),
+		Name:            &bookName,
+		PublicationYear: int(parsedPublicationYear),
+		NumberOfPages:   int(parsedNumOfPages),
+		AuthorID:        &pAuthorID,
+		Publication:     &publication,
+	}
+
+	newBooks, err := repositories.GetBooks(&Fstruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,78 +85,39 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
 		return
 	}
-	Fstruc := types.FilterStruc{
-		Name:        &CreateBook.Name,
-		Author:      &CreateBook.Author,
-		Publication: &CreateBook.Publication,
-	}
 
-	newBooks, err := repositories.GetBook(&Fstruc)
+	book, err := repositories.BookCreation(&CreateBook)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if len(newBooks) == 0 {
-		reqStruct := models.Book{
-			Name:        CreateBook.Name,
-			Author:      CreateBook.Author,
-			Publication: CreateBook.Publication,
-		}
-		book, err := repositories.BookCreation(&reqStruct)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if book != nil {
-			res, err := json.Marshal(book)
-			if err != nil {
-				http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
-				return
-			}
-			w.WriteHeader(http.StatusCreated)
-			w.Write(res)
-			return
-		}
+	res, err := json.Marshal(book)
+	if err != nil {
+		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
+		return
 	}
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("book already exists"))
+	w.WriteHeader(http.StatusCreated)
+	w.Write(res)
+
 }
 
 func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var updateBook = &types.UpdateStruc{}
+	var updateBook = &types.UpdateBookStruc{}
 	err := json.NewDecoder(r.Body).Decode(updateBook)
 	if err != nil {
-		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
+		http.Error(w, "Invalid Format of Data while decoding", http.StatusNotAcceptable)
 		return
 	}
 	err1 := updateBook.Validate()
 	if err1 != nil {
-		http.Error(w, "Invalid Format of Data", http.StatusNotAcceptable)
+		http.Error(w, "Invalid Format of Data while validating", http.StatusNotAcceptable)
 		return
 	}
 	vars := mux.Vars(r)
 	bookId := vars["bookId"]
-	parsedId, err := strconv.ParseInt(bookId, 0, 0)
-	if err != nil {
-		http.Error(w, "invalid format of ID", http.StatusBadRequest)
-		return
-	}
-	Fstruc := types.FilterStruc{
-		ID: uint(parsedId),
-	}
-	books, err := repositories.GetBook(&Fstruc)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if len(books) == 0 {
-		http.Error(w, "there is no book registered by this ID", http.StatusBadRequest)
-		return
-	}
-
-	bookID, err := strconv.Atoi(bookId)
+	bookID, err := strconv.ParseUint(bookId, 0, 0)
 	if err != nil {
 		http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return
@@ -172,17 +155,13 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 	Fstruc := types.FilterStruc{
 		ID: uint(parsedId),
 	}
-	books, err := repositories.GetBook(&Fstruc)
+	books, err := repositories.GetBooks(&Fstruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if len(books) == 0 {
 		http.Error(w, "there is no book registered by this ID", http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return
 	}
 	msg, err := repositories.DeleteBook(parsedId)
