@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetAuthor(w http.ResponseWriter, r *http.Request) {
+func GetAuthors(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	authorId := r.URL.Query().Get("author_id")
 	authorName := r.URL.Query().Get("author_name")

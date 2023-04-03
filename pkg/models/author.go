@@ -3,11 +3,10 @@ package models
 import (
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
-	"github.com/jinzhu/gorm"
 )
 
 type Author struct {
-	gorm.Model
+	ID    uint   `gorm:"primary_key"`
 	Name  string `json:"author_name"`
 	Email string `gorm:"unique;not null" json:"email"`
 	Age   int    `json:"author_age"`
