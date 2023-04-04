@@ -3,15 +3,26 @@ package repositories
 import (
 	"errors"
 
+	"github.com/Bappy60/BookStore_in_Go/pkg/domain"
 	"github.com/Bappy60/BookStore_in_Go/pkg/models"
 	"github.com/Bappy60/BookStore_in_Go/pkg/types"
 	"github.com/jinzhu/gorm"
 )
 
-func GetAuthor(authorStruc *types.AuthorStruc) ([]models.Author, error) {
+type authorRepo struct {
+	db *gorm.DB
+}
+
+func AuthorDBInstance(d *gorm.DB) domain.IAuthorRepo {
+	return &authorRepo{
+		db: d,
+	}
+}
+
+func (repo *authorRepo) GetAuthor(authorStruc *types.AuthorStruc) ([]models.Author, error) {
 	var Authors []models.Author
 
-	query := DB.Model(&models.Author{}).Preload("Books")
+	query := repo.db.Model(&models.Author{}).Preload("Books")
 	if authorStruc.ID == 0 && authorStruc.Name == "" && authorStruc.Email == "" && authorStruc.Age == 0 {
 		query.Find(&Authors)
 		return Authors, nil
@@ -38,28 +49,32 @@ func GetAuthor(authorStruc *types.AuthorStruc) ([]models.Author, error) {
 	return Authors, nil
 }
 
-func AuthorCreation(author *models.Author) (*models.Author, error) {
-	var existingAuthor models.Author
-	err := DB.Where("name = ? AND email = ?", author.Name, author.Email).First(&existingAuthor).Error
+func (repo *authorRepo) AuthorCreation(newAuthor *types.CreateAuthorStruc) (*models.Author, error) {
+	var author models.Author
+	err := repo.db.Where("name = ? AND email = ?", newAuthor.Name, newAuthor.Email).First(&author).Error
 	if err == nil {
 		return nil, errors.New("author already exists")
 	}
-	if err := DB.Create(author).Error; err != nil {
-		return nil, DB.Error
+
+	author.Name = newAuthor.Name
+	author.Email = newAuthor.Email
+	author.Age = newAuthor.Age
+
+	if err := repo.db.Create(&author).Error; err != nil {
+		return nil, err
 	}
-	return author, nil
+	return &author, nil
 }
 
-func UpdateAuthorInfo(updateAuthor *types.UpdateAuthorStruc) (*models.Author, error) {
+func (repo *authorRepo) UpdateAuthorInfo(updateAuthor *types.UpdateAuthorStruc) (*models.Author, error) {
 
 	AuthorDetails := &models.Author{}
 	AuthorDetails.ID = uint(updateAuthor.ID)
-	if err := DB.Where("id = ?", AuthorDetails.ID).Find(AuthorDetails).Error; err != nil {
+	if err := repo.db.Where("id = ?", AuthorDetails.ID).Find(AuthorDetails).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("no author found with given ID")
 		}
 	}
-
 	if updateAuthor.Name != nil {
 		AuthorDetails.Name = *updateAuthor.Name
 	}
@@ -70,15 +85,20 @@ func UpdateAuthorInfo(updateAuthor *types.UpdateAuthorStruc) (*models.Author, er
 		AuthorDetails.Age = *updateAuthor.Age
 	}
 
-	err := DB.Save(AuthorDetails).Error
+	err := repo.db.Save(AuthorDetails).Error
 	if err != nil {
 		return nil, err
 	}
 	return AuthorDetails, nil
 }
 
-func DeleteAuthor(ID int64) (string, error) {
+func (repo *authorRepo)  DeleteAuthor(ID int64) (string, error) {
 	var author = models.Author{}
-	DB.Unscoped().Where("id =?", ID).Delete(author)
+	if err := repo.db.Where("id = ?", ID).Find(&author).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", errors.New("no author found with given ID")
+		}
+	}
+	repo.db.Unscoped().Where("id =?", ID).Delete(author)
 	return "Delete successful", nil
 }

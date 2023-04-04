@@ -4,12 +4,18 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
-	"github.com/Bappy60/BookStore_in_Go/pkg/models"
-	"github.com/Bappy60/BookStore_in_Go/pkg/repositories"
+	"github.com/Bappy60/BookStore_in_Go/pkg/domain"
 	"github.com/Bappy60/BookStore_in_Go/pkg/types"
 	"github.com/gorilla/mux"
 )
+
+var AuthorRepo domain.IAuthorRepo
+
+func SetAuthorRepo(aRepo domain.IAuthorRepo) {
+	AuthorRepo = aRepo
+}
 
 func GetAuthors(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -36,7 +42,7 @@ func GetAuthors(w http.ResponseWriter, r *http.Request) {
 		Age:   int(parsedAge),
 	}
 
-	Authors, err := repositories.GetAuthor(&Authorstruc)
+	Authors, err := AuthorRepo.GetAuthor(&Authorstruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -68,16 +74,18 @@ func CreateAuthor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err1.Error(), http.StatusNotAcceptable)
 		return
 	}
-	authorStruct := &models.Author{
-		Name:  CreateAuthor.Name,
-		Email: CreateAuthor.Email,
-		Age:   CreateAuthor.Age,
-	}
-	author, err := repositories.AuthorCreation(authorStruct)
+
+	author, err := AuthorRepo.AuthorCreation(&CreateAuthor)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			http.Error(w, "Email already exists", http.StatusBadRequest)
+			return
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
+
 	res, err := json.Marshal(author)
 	if err != nil {
 		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
@@ -110,7 +118,7 @@ func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 	updateAuthor.ID = parsedAuthorId
 
-	updatedAuthor, err := repositories.UpdateAuthorInfo(updateAuthor)
+	updatedAuthor, err := AuthorRepo.UpdateAuthorInfo(updateAuthor)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -139,19 +147,7 @@ func DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return
 	}
-	AuthorStruc := types.AuthorStruc{
-		ID: parsedAuthorId,
-	}
-	author, err := repositories.GetAuthor(&AuthorStruc)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if len(author) == 0 {
-		http.Error(w, "there is no author registered by this ID", http.StatusBadRequest)
-		return
-	}
-	msg, err := repositories.DeleteAuthor(int64(parsedAuthorId))
+	msg, err := AuthorRepo.DeleteAuthor(int64(parsedAuthorId))
 	if err != nil {
 		http.Error(w, "There is no author registered by this ID", http.StatusInternalServerError)
 		return

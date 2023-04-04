@@ -1,15 +1,13 @@
 package types
 
 import (
+	"errors"
+	"regexp"
+
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
-type ResponseStruc struct {
-	Name        string `json:"name"`
-	Author      string `json:"author"`
-	Publication string `json:"publication"`
-}
 
 type FilterStruc struct {
 	ID              uint
@@ -25,6 +23,24 @@ type AuthorStruc struct {
 	Email string `gorm:"unique;not null" json:"email"`
 	Age   int    `json:"author_age"`
 }
+
+type CreateBookStruc struct {
+	Name            string `gorm:"" json:"name"`
+	PublicationYear int    `json:"publication_year"`
+	NumberOfPages   int    `json:"number_of_pages"`
+	AuthorID        uint   `gorm:"index" json:"author_id"` // foreign key
+	Publication     string `json:"publication"`
+}
+func (book CreateBookStruc) Validate() error {
+	return validation.ValidateStruct(&book,
+		validation.Field(&book.Name, validation.Required, validation.Length(3, 50)),
+		validation.Field(&book.PublicationYear, validation.Required),
+		validation.Field(&book.NumberOfPages, validation.Required),
+		validation.Field(&book.AuthorID, validation.Required),
+		validation.Field(&book.Publication, validation.Length(1, 50)),
+	)
+}
+
 type CreateAuthorStruc struct {
 	Name  string `json:"author_name"`
 	Email string `gorm:"unique;not null" json:"email"`
@@ -33,12 +49,24 @@ type CreateAuthorStruc struct {
 
 func (createAuthorStruc CreateAuthorStruc) Validate() error {
 	return validation.ValidateStruct(&createAuthorStruc,
-		validation.Field(&createAuthorStruc.Name, validation.Required, validation.Length(3, 50)),
+		validation.Field(&createAuthorStruc.Name, validation.Required, validation.Length(3, 50), validation.By(AuthorNameValidator)),
 		validation.Field(&createAuthorStruc.Email, validation.Required, is.Email),
 		validation.Field(&createAuthorStruc.Age, validation.Min(1)),
 	)
 }
 
+func AuthorNameValidator (value interface{}) error{
+	if str, ok := value.(string); ok {
+		match, err := regexp.MatchString("^[A-Za-z ]+$", str)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return  errors.New("author name should contain only letters and spaces")
+		}
+	}
+	return nil
+}
 type UpdateBookStruc struct {
 	ID              uint
 	Name            *string `json:"name"`
@@ -70,11 +98,3 @@ func (updateAuthorStruc UpdateAuthorStruc) Validate() error {
 		validation.Field(&updateAuthorStruc.Age, validation.Min(5), validation.Max(150)),
 	)
 }
-
-// func requiredIfNotZero(value interface{}) error {
-// 	if intValue, ok := value.(int); ok && intValue == 0 {
-// 		log.Println("entered in age validation")
-// 		return errors.New("must not be zero")
-// 	}
-// 	return nil
-// }

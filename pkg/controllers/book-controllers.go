@@ -5,13 +5,16 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Bappy60/BookStore_in_Go/pkg/models"
-	"github.com/Bappy60/BookStore_in_Go/pkg/repositories"
+	"github.com/Bappy60/BookStore_in_Go/pkg/domain"
 	"github.com/Bappy60/BookStore_in_Go/pkg/types"
 	"github.com/gorilla/mux"
 )
 
-var NewBook types.ResponseStruc
+var BookRepo domain.IBookRepo
+
+func SetBookRepo(bRepo domain.IBookRepo) {
+	BookRepo = bRepo
+}
 
 func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -53,7 +56,7 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 		Publication:     &publication,
 	}
 
-	newBooks, err := repositories.GetBooks(&Fstruc)
+	newBooks, err := BookRepo.GetBooks(&Fstruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -73,7 +76,7 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 
 func CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	CreateBook := models.Book{}
+	CreateBook := types.CreateBookStruc{}
 	err := json.NewDecoder(r.Body).Decode(&CreateBook)
 	if err != nil {
 		http.Error(w, "Error While Marshaling", http.StatusNotAcceptable)
@@ -86,7 +89,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	book, err := repositories.BookCreation(&CreateBook)
+	book, err := BookRepo.CreateBook(&CreateBook)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -123,7 +126,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updateBook.ID = uint(bookID)
-	updatedBook, err := repositories.UpdateBookInfo(updateBook)
+	updatedBook, err := BookRepo.UpdateBook(updateBook)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -152,19 +155,7 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return
 	}
-	Fstruc := types.FilterStruc{
-		ID: uint(parsedId),
-	}
-	books, err := repositories.GetBooks(&Fstruc)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if len(books) == 0 {
-		http.Error(w, "there is no book registered by this ID", http.StatusBadRequest)
-		return
-	}
-	msg, err := repositories.DeleteBook(parsedId)
+	msg, err := BookRepo.DeleteBook(parsedId)
 	if err != nil {
 		http.Error(w, "There is no book registered by this ID", http.StatusInternalServerError)
 		return
