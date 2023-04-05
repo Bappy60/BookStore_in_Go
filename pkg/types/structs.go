@@ -8,8 +8,23 @@ import (
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
+type BookReqStruc struct{
+	ID              string   
+	Name            string 
+	PublicationYear string    
+	NumberOfPages   string    
+	AuthorID        string  
+	Publication     string 
+}
 
-type FilterStruc struct {
+type AuthorReqStruc struct {
+	ID    string 
+	Name  string 
+	Email string 
+	Age   string    
+}
+
+type FilterBookStruc struct {
 	ID              uint
 	Name            *string
 	PublicationYear int
@@ -17,11 +32,12 @@ type FilterStruc struct {
 	AuthorID        *uint
 	Publication     *string
 }
-type AuthorStruc struct {
-	ID    uint64 `gorm:"primaryKey" json:"author_id"`
-	Name  string `json:"author_name"`
-	Email string `gorm:"unique;not null" json:"email"`
-	Age   int    `json:"author_age"`
+
+type FilterAuthorStruc struct{
+	ID    uint 
+	Name  string 
+	Email string 
+	Age   int64
 }
 
 type CreateBookStruc struct {
@@ -68,11 +84,11 @@ func AuthorNameValidator (value interface{}) error{
 	return nil
 }
 type UpdateBookStruc struct {
-	ID              uint
-	Name            *string `json:"name"`
-	PublicationYear *int    `json:"publication_year"`
-	NumberOfPages   *int    `json:"number_of_pages"`
-	Publication     *string `json:"publication"`
+	ID              string
+	Name            string `json:"name"`
+	PublicationYear int    `json:"publication_year"`
+	NumberOfPages   int    `json:"number_of_pages"`
+	Publication     string `json:"publication"`
 }
 
 func (updateBookStruc UpdateBookStruc) Validate() error {
@@ -85,10 +101,10 @@ func (updateBookStruc UpdateBookStruc) Validate() error {
 }
 
 type UpdateAuthorStruc struct {
-	ID    uint64
-	Name  *string
-	Email *string
-	Age   *int
+	ID    string
+	Name  string
+	Email string
+	Age   int
 }
 
 func (updateAuthorStruc UpdateAuthorStruc) Validate() error {

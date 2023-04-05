@@ -19,7 +19,7 @@ func BookDBInstance(d *gorm.DB) domain.IBookRepo {
 	}
 }
 
-func (repo *bookRepo) GetBooks(filterStruct *types.FilterStruc) ([]models.Book, error) {
+func (repo *bookRepo) GetBooks(filterStruct *types.FilterBookStruc) ([]models.Book, error) {
 	var Books []models.Book
 
 	query := repo.db.Model(&models.Book{}).Preload("Author")
@@ -75,26 +75,26 @@ func (repo *bookRepo) CreateBook(newBook *types.CreateBookStruc) (*models.Book, 
 	return &Book, nil
 }
 
-func (repo *bookRepo) UpdateBook(updateBook *types.UpdateBookStruc) (*models.Book, error) {
-	bookDetails := &models.Book{}
-	bookDetails.ID = updateBook.ID
-	if err := repo.db.Where("id = ?", bookDetails.ID).Find(bookDetails).Error; err != nil {
+func (repo *bookRepo) UpdateBook(updateBook *models.Book) (*models.Book, error) {
+	 bookDetails := &models.Book{}
+	if err := repo.db.Where("id = ?", updateBook.ID).Find(bookDetails).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("no book found with given ID")
 		}
 	}
-	if updateBook.Name != nil {
-		bookDetails.Name = *updateBook.Name
+	if updateBook.Name != "" {
+		bookDetails.Name = updateBook.Name
 	}
-	if updateBook.NumberOfPages != nil {
-		bookDetails.NumberOfPages = *updateBook.NumberOfPages
+	if updateBook.NumberOfPages != 0 {
+		bookDetails.NumberOfPages = updateBook.NumberOfPages
 	}
-	if updateBook.PublicationYear != nil {
-		bookDetails.PublicationYear = *updateBook.PublicationYear
+	if updateBook.PublicationYear != 0 {
+		bookDetails.PublicationYear = updateBook.PublicationYear
 	}
-	if updateBook.Publication != nil {
-		bookDetails.Publication = *updateBook.Publication
+	if updateBook.Publication != "" {
+		bookDetails.Publication = updateBook.Publication
 	}
+
 	repo.db.Save(bookDetails)
 	return bookDetails, nil
 }

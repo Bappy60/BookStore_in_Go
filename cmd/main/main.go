@@ -9,15 +9,21 @@ import (
 	"github.com/Bappy60/BookStore_in_Go/pkg/models"
 	"github.com/Bappy60/BookStore_in_Go/pkg/repositories"
 	"github.com/Bappy60/BookStore_in_Go/pkg/routes"
+	"github.com/Bappy60/BookStore_in_Go/pkg/services"
 	"github.com/gorilla/mux"
 )
 
 func main() {
 	var db = config.Initialize()
+
 	bookRepo := repositories.BookDBInstance(db)
+	bookService := services.BookServiceInstance(bookRepo)
+	controllers.SetBookService(bookService)
+
 	authorRepo := repositories.AuthorDBInstance(db)
-	controllers.SetBookRepo(bookRepo)
-	controllers.SetAuthorRepo(authorRepo)
+	authorService := services.AuthorServiceInstance(authorRepo)
+	controllers.SetAuthorService(authorService)
+
 	db.AutoMigrate(&models.Book{},&models.Author{})
 	log.Println("Database Connected...")
 	r := mux.NewRouter()

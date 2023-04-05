@@ -19,7 +19,7 @@ func AuthorDBInstance(d *gorm.DB) domain.IAuthorRepo {
 	}
 }
 
-func (repo *authorRepo) GetAuthor(authorStruc *types.AuthorStruc) ([]models.Author, error) {
+func (repo *authorRepo) GetAuthor(authorStruc *types.FilterAuthorStruc) ([]models.Author, error) {
 	var Authors []models.Author
 
 	query := repo.db.Model(&models.Author{}).Preload("Books")
@@ -66,23 +66,23 @@ func (repo *authorRepo) AuthorCreation(newAuthor *types.CreateAuthorStruc) (*mod
 	return &author, nil
 }
 
-func (repo *authorRepo) UpdateAuthorInfo(updateAuthor *types.UpdateAuthorStruc) (*models.Author, error) {
+func (repo *authorRepo) UpdateAuthorInfo(updateAuthor *models.Author) (*models.Author, error) {
 
 	AuthorDetails := &models.Author{}
-	AuthorDetails.ID = uint(updateAuthor.ID)
+	AuthorDetails.ID = updateAuthor.ID
 	if err := repo.db.Where("id = ?", AuthorDetails.ID).Find(AuthorDetails).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("no author found with given ID")
 		}
 	}
-	if updateAuthor.Name != nil {
-		AuthorDetails.Name = *updateAuthor.Name
+	if updateAuthor.Name != "" {
+		AuthorDetails.Name = updateAuthor.Name
 	}
-	if updateAuthor.Email != nil {
-		AuthorDetails.Email = *updateAuthor.Email
+	if updateAuthor.Email != "" {
+		AuthorDetails.Email = updateAuthor.Email
 	}
-	if updateAuthor.Age != nil {
-		AuthorDetails.Age = *updateAuthor.Age
+	if updateAuthor.Age != 0 {
+		AuthorDetails.Age = updateAuthor.Age
 	}
 
 	err := repo.db.Save(AuthorDetails).Error

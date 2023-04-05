@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/Bappy60/BookStore_in_Go/pkg/domain"
@@ -11,10 +10,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var AuthorRepo domain.IAuthorRepo
+var AuthorService domain.IAuthorService
 
-func SetAuthorRepo(aRepo domain.IAuthorRepo) {
-	AuthorRepo = aRepo
+func SetAuthorService(aService domain.IAuthorService) {
+	AuthorService = aService
 }
 
 func GetAuthors(w http.ResponseWriter, r *http.Request) {
@@ -24,25 +23,14 @@ func GetAuthors(w http.ResponseWriter, r *http.Request) {
 	authorEmail := r.URL.Query().Get("email")
 	authorAge := r.URL.Query().Get("author_age")
 
-	parsedId, err := strconv.ParseUint(authorId, 0, 0)
-	if err != nil && authorId != "" {
-		http.Error(w, "invalid format of data while parsing id", http.StatusBadRequest)
-		return
-	}
-	parsedAge, err := strconv.ParseInt(authorAge, 0, 0)
-	if err != nil && authorAge != "" {
-		http.Error(w, "invalid format of data while parsing age", http.StatusBadRequest)
-		return
-	}
-
-	Authorstruc := types.AuthorStruc{
-		ID:    parsedId,
+	authorReqstruc := types.AuthorReqStruc{
+		ID:    authorId,
 		Name:  authorName,
 		Email: authorEmail,
-		Age:   int(parsedAge),
+		Age:   authorAge,
 	}
 
-	Authors, err := AuthorRepo.GetAuthor(&Authorstruc)
+	Authors, err := AuthorService.GetAuthor(&authorReqstruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -75,7 +63,7 @@ func CreateAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	author, err := AuthorRepo.AuthorCreation(&CreateAuthor)
+	author, err := AuthorService.AuthorCreation(&CreateAuthor)
 	if err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			http.Error(w, "Email already exists", http.StatusBadRequest)
@@ -111,14 +99,9 @@ func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	authorId := vars["author_id"]
-	parsedAuthorId, err := strconv.ParseUint(authorId, 0, 0)
-	if err != nil {
-		http.Error(w, "invalid format of ID", http.StatusBadRequest)
-		return
-	}
-	updateAuthor.ID = parsedAuthorId
+	updateAuthor.ID = authorId
 
-	updatedAuthor, err := AuthorRepo.UpdateAuthorInfo(updateAuthor)
+	updatedAuthor, err := AuthorService.UpdateAuthorInfo(updateAuthor)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -142,12 +125,8 @@ func DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return
 	}
-	parsedAuthorId, err := strconv.ParseUint(authorId, 0, 0)
-	if err != nil {
-		http.Error(w, "invalid format of ID", http.StatusBadRequest)
-		return
-	}
-	msg, err := AuthorRepo.DeleteAuthor(int64(parsedAuthorId))
+
+	msg, err := AuthorService.DeleteAuthor(authorId)
 	if err != nil {
 		http.Error(w, "There is no author registered by this ID", http.StatusInternalServerError)
 		return
