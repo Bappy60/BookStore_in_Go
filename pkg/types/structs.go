@@ -4,8 +4,8 @@ import (
 	"errors"
 	"regexp"
 
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/is"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type BookReqStruc struct {
@@ -66,10 +66,10 @@ type CreateAuthorStruc struct {
 
 func (createAuthorStruc CreateAuthorStruc) Validate() error {
 	return validation.ValidateStruct(&createAuthorStruc,
-		validation.Field(&createAuthorStruc.Name, validation.Required, validation.Length(3, 50), validation.By(AuthorNameValidator)),
-		validation.Field(&createAuthorStruc.Email, validation.Required, is.Email),
-		validation.Field(&createAuthorStruc.Age, validation.Min(1)),
-	)
+		validation.Field(&createAuthorStruc.Name, validation.When(createAuthorStruc.Name != "", validation.By(AuthorNameValidator)), validation.Length(3, 50)),
+		validation.Field(&createAuthorStruc.Email, is.Email),
+		validation.Field(&createAuthorStruc.Age, validation.Min(int(0)).Exclusive(), validation.NilOrNotEmpty.Error("must be greater than 0"), validation.Max(150)))
+	
 }
 
 type UpdateBookStruc struct {
@@ -100,7 +100,6 @@ func (updateAuthorStruc UpdateAuthorStruc) Validate() error {
 	return validation.ValidateStruct(&updateAuthorStruc,
 		validation.Field(&updateAuthorStruc.Name, validation.When(updateAuthorStruc.Name != "", validation.By(AuthorNameValidator)), validation.Length(3, 50)),
 		validation.Field(&updateAuthorStruc.Email, is.Email),
-
 		validation.Field(&updateAuthorStruc.Age, validation.Min(int(0)).Exclusive(), validation.NilOrNotEmpty.Error("must be greater than 0"), validation.Max(150)))
 }
 
