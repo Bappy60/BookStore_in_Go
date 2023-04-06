@@ -23,22 +23,18 @@ func (service *BookService) GetBooks(reqStruct *types.BookReqStruc) ([]models.Bo
 
 	parsedId, err := strconv.ParseInt(reqStruct.ID, 0, 0)
 	if err != nil && reqStruct.ID != "" {
-		// http.Error(w, "invalid format of book id", http.StatusBadRequest)
 		return nil,err
 	}
 	parsedAuthorID, err := strconv.ParseUint(reqStruct.AuthorID, 0, 0)
 	if err != nil && reqStruct.AuthorID != "" {
-		// http.Error(w, "invalid format of author id", http.StatusBadRequest)
 		return nil,err
 	}
 	parsedNumOfPages, err := strconv.ParseInt(reqStruct.NumberOfPages, 0, 0)
 	if err != nil && reqStruct.NumberOfPages != "" {
-		// http.Error(w, "invalid format of number of pages", http.StatusBadRequest)
 		return nil,err
 	}
 	parsedPublicationYear, err := strconv.ParseInt(reqStruct.PublicationYear, 0, 0)
 	if err != nil && reqStruct.PublicationYear != "" {
-		// http.Error(w, "invalid format of publication year", http.StatusBadRequest)
 		return nil,err
 	}
 
@@ -71,7 +67,6 @@ func (service *BookService) CreateBook(book *types.CreateBookStruc) (*models.Boo
 func (service *BookService) UpdateBook(reqBook *types.UpdateBookStruc) (*models.Book, error) {
 	bookID, err := strconv.ParseUint(reqBook.ID, 0, 0)
 	if err != nil {
-		// http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return nil,err
 	}
 	book := &models.Book{

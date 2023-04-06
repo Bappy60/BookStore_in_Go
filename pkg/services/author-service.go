@@ -23,12 +23,10 @@ func (service *AuthorService) GetAuthor(reqStruc *types.AuthorReqStruc) ([]model
 
 	parsedId, err := strconv.ParseUint(reqStruc.ID, 0, 0)
 	if err != nil && reqStruc.ID != "" {
-		//http.Error(w, "invalid format of data while parsing id", http.StatusBadRequest)
 		return nil, err
 	}
 	parsedAge, err := strconv.ParseInt(reqStruc.Age, 0, 0)
 	if err != nil && reqStruc.Age != "" {
-		//http.Error(w, "invalid format of data while parsing age", http.StatusBadRequest)
 		return nil, err
 	}
 
@@ -59,7 +57,6 @@ func (service *AuthorService) CreateAuthor(newAuthor *types.CreateAuthorStruc) (
 func (service *AuthorService) UpdateAuthor(updateAuthor *types.UpdateAuthorStruc) (*models.Author, error){
 	parsedAuthorId, err := strconv.ParseUint(updateAuthor.ID, 0, 0)
 	if err != nil {
-		//http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return nil,err
 	}
 
@@ -81,7 +78,6 @@ func (service *AuthorService) UpdateAuthor(updateAuthor *types.UpdateAuthorStruc
 func (service *AuthorService) DeleteAuthor(authorId string) (string, error){
 	parsedAuthorId, err := strconv.ParseInt(authorId, 0, 0)
 	if err != nil {
-		//http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return "",err
 	}
 	res, err := service.repo.DeleteAuthor(parsedAuthorId)
