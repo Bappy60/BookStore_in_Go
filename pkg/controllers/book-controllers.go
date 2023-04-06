@@ -9,13 +9,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var BookService domain.IBookService
+// var BookService domain.IBookService
 
-func SetBookService(bService domain.IBookService) {
-	BookService = bService
+// func SetBookService(bService domain.IBookService) {
+// 	BookService = bService
+// }
+type BookController struct {
+	bookService domain.IBookService
 }
 
-func GetBook(w http.ResponseWriter, r *http.Request) {
+func BookControllerInstance(bookService domain.IBookService) domain.IBookController {
+	return &BookController{
+		bookService: bookService,
+	}
+}
+
+func (bookController *BookController) GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	bookId := r.URL.Query().Get("bookId")
 	bookName := r.URL.Query().Get("bookName")
@@ -33,7 +42,7 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 		PublicationYear: publicationYear,
 	}
 
-	newBooks, err := BookService.GetBooks(&reqStruc)
+	newBooks, err := bookController.bookService.GetBooks(&reqStruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -51,7 +60,7 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-func CreateBook(w http.ResponseWriter, r *http.Request) {
+func (bookController *BookController) CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	CreateBook := types.CreateBookStruc{}
 	err := json.NewDecoder(r.Body).Decode(&CreateBook)
@@ -66,7 +75,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	book, err := BookService.CreateBook(&CreateBook)
+	book, err := bookController.bookService.CreateBook(&CreateBook)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -81,7 +90,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func UpdateBook(w http.ResponseWriter, r *http.Request) {
+func (bookController *BookController) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var updateBookStruc = &types.UpdateBookStruc{}
@@ -99,7 +108,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	bookId := vars["bookId"]
 	updateBookStruc.ID = bookId
 
-	updatedBook, err := BookService.UpdateBook(updateBookStruc)
+	updatedBook, err := bookController.bookService.UpdateBook(updateBookStruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -114,7 +123,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-func DeleteBook(w http.ResponseWriter, r *http.Request) {
+func (bookController *BookController) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	vars := mux.Vars(r)
@@ -123,9 +132,9 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return
 	}
-	msg, err := BookService.DeleteBook(bookId)
+	msg, err := bookController.bookService.DeleteBook(bookId)
 	if err != nil {
-		http.Error(w, "There is no book registered by this ID", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)

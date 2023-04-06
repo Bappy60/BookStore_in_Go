@@ -46,9 +46,9 @@ func (service *AuthorService) GetAuthor(reqStruc *types.AuthorReqStruc) ([]model
 }
 
 
-func (service *AuthorService) AuthorCreation(newAuthor *types.CreateAuthorStruc) (*models.Author, error){
+func (service *AuthorService) CreateAuthor(newAuthor *types.CreateAuthorStruc) (*models.Author, error){
 
-	res, err := service.repo.AuthorCreation(newAuthor)
+	res, err := service.repo.CreateAuthor(newAuthor)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (service *AuthorService) AuthorCreation(newAuthor *types.CreateAuthorStruc)
 }
 
 
-func (service *AuthorService) UpdateAuthorInfo(updateAuthor *types.UpdateAuthorStruc) (*models.Author, error){
+func (service *AuthorService) UpdateAuthor(updateAuthor *types.UpdateAuthorStruc) (*models.Author, error){
 	parsedAuthorId, err := strconv.ParseUint(updateAuthor.ID, 0, 0)
 	if err != nil {
 		//http.Error(w, "invalid format of ID", http.StatusBadRequest)
@@ -70,7 +70,7 @@ func (service *AuthorService) UpdateAuthorInfo(updateAuthor *types.UpdateAuthorS
 		Age: updateAuthor.Age,
 	}
 
-	res, err := service.repo.UpdateAuthorInfo(author)
+	res, err := service.repo.UpdateAuthor(author)
 	if err != nil {
 		return nil, err
 	}

@@ -10,13 +10,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var AuthorService domain.IAuthorService
-
-func SetAuthorService(aService domain.IAuthorService) {
-	AuthorService = aService
+type AuthorController struct {
+	authorService domain.IAuthorService
 }
 
-func GetAuthors(w http.ResponseWriter, r *http.Request) {
+func AuthorControllerInstance(authorService domain.IAuthorService) domain.IAuthorController {
+	return &AuthorController{
+		authorService: authorService,
+	}
+}
+
+func (authorController *AuthorController) GetAuthors(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	authorId := r.URL.Query().Get("author_id")
 	authorName := r.URL.Query().Get("author_name")
@@ -30,7 +34,7 @@ func GetAuthors(w http.ResponseWriter, r *http.Request) {
 		Age:   authorAge,
 	}
 
-	Authors, err := AuthorService.GetAuthor(&authorReqstruc)
+	Authors, err := authorController.authorService.GetAuthor(&authorReqstruc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,7 +52,7 @@ func GetAuthors(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-func CreateAuthor(w http.ResponseWriter, r *http.Request) {
+func (authorController *AuthorController) CreateAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	CreateAuthor := types.CreateAuthorStruc{}
 	err := json.NewDecoder(r.Body).Decode(&CreateAuthor)
@@ -63,7 +67,7 @@ func CreateAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	author, err := AuthorService.AuthorCreation(&CreateAuthor)
+	author, err := authorController.authorService.CreateAuthor(&CreateAuthor)
 	if err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			http.Error(w, "Email already exists", http.StatusBadRequest)
@@ -83,7 +87,7 @@ func CreateAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
+func (authorController *AuthorController) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var updateAuthor = &types.UpdateAuthorStruc{}
@@ -101,7 +105,7 @@ func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	authorId := vars["author_id"]
 	updateAuthor.ID = authorId
 
-	updatedAuthor, err := AuthorService.UpdateAuthorInfo(updateAuthor)
+	updatedAuthor, err := authorController.authorService.UpdateAuthor(updateAuthor)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,7 +120,7 @@ func UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 }
 
-func DeleteAuthor(w http.ResponseWriter, r *http.Request) {
+func (authorController *AuthorController) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	vars := mux.Vars(r)
@@ -126,7 +130,7 @@ func DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := AuthorService.DeleteAuthor(authorId)
+	msg, err := authorController.authorService.DeleteAuthor(authorId)
 	if err != nil {
 		http.Error(w, "There is no author registered by this ID", http.StatusInternalServerError)
 		return

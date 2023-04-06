@@ -49,7 +49,7 @@ func (repo *authorRepo) GetAuthor(authorStruc *types.FilterAuthorStruc) ([]model
 	return Authors, nil
 }
 
-func (repo *authorRepo) AuthorCreation(newAuthor *types.CreateAuthorStruc) (*models.Author, error) {
+func (repo *authorRepo) CreateAuthor(newAuthor *types.CreateAuthorStruc) (*models.Author, error) {
 	var author models.Author
 	err := repo.db.Where("name = ? AND email = ?", newAuthor.Name, newAuthor.Email).First(&author).Error
 	if err == nil {
@@ -66,7 +66,7 @@ func (repo *authorRepo) AuthorCreation(newAuthor *types.CreateAuthorStruc) (*mod
 	return &author, nil
 }
 
-func (repo *authorRepo) UpdateAuthorInfo(updateAuthor *models.Author) (*models.Author, error) {
+func (repo *authorRepo) UpdateAuthor(updateAuthor *models.Author) (*models.Author, error) {
 
 	AuthorDetails := &models.Author{}
 	AuthorDetails.ID = updateAuthor.ID

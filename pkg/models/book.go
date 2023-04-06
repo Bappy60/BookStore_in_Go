@@ -1,9 +1,5 @@
 package models
 
-import (
-	validation "github.com/go-ozzo/ozzo-validation"
-)
-
 type Book struct {
 	ID              uint   `gorm:"primary_key;AUTO_INCREMENT"`
 	Name            string `gorm:"" json:"name"`
@@ -12,14 +8,4 @@ type Book struct {
 	AuthorID        uint   `gorm:"index" json:"author_id"` // foreign key
 	Author          Author `gorm:"foreignKey:AuthorID"`
 	Publication     string `json:"publication"`
-}
-
-func (book Book) Validate() error {
-	return validation.ValidateStruct(&book,
-		validation.Field(&book.Name, validation.Required, validation.Length(3, 50)),
-		validation.Field(&book.PublicationYear, validation.Required),
-		validation.Field(&book.NumberOfPages, validation.Required),
-		validation.Field(&book.AuthorID, validation.Required),
-		validation.Field(&book.Publication, validation.Length(1, 50)),
-	)
 }

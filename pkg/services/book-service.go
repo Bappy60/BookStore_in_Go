@@ -92,7 +92,6 @@ func (service *BookService) DeleteBook(bookId string) (string, error) {
 
 	parsedId, err := strconv.ParseInt(bookId, 0, 0)
 	if err != nil {
-		//http.Error(w, "invalid format of ID", http.StatusBadRequest)
 		return "invalid format of ID",err
 	}
 	res, err := service.repo.DeleteBook(parsedId)
