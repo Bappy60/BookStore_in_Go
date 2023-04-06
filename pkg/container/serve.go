@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Bappy60/BookStore_in_Go/pkg/config"
 	"github.com/Bappy60/BookStore_in_Go/pkg/connection"
 	"github.com/Bappy60/BookStore_in_Go/pkg/controllers"
 	"github.com/Bappy60/BookStore_in_Go/pkg/repositories"
@@ -13,6 +14,7 @@ import (
 )
 
 func Serve() {
+	config.SetConfig()
 	var db = connection.Initialize()
 
 	bookRepo := repositories.BookDBInstance(db)
